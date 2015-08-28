@@ -1,128 +1,178 @@
-import React, { Component, PropTypes } from 'react';
-import { createStore, applyMiddleware, bindActionCreators } from 'redux';
-import { provide, connect } from 'react-redux';
-import thunk from 'redux-thunk';
+import './index.styl';
 
+import React, { Component } from 'react';
 
-const initialState = 2;
-
-
-// The reducer
-function counter (state = initialState, action) {
-  switch (action.type) {
-
-    case 'ADD':
-      return state + action.amount;
-    case 'DEL':
-      return state - 1;
-
-    default:
-      return state;
+const categories = {
+  videos: {
+    title: 'video games',
+    subs: ['xbox', 'ps4']
+  },
+  appliances: {
+    title: 'Cooking stuff',
+    subs: {
+      cookers: {
+        min: 0,
+        max: 100
+      },
+      something: {
+        min: 200,
+        max: 500
+      }
+    }
+  },
+  phones: {
+    title: 'phones and stuff',
+    subs: ['cell phones', 'cases']
   }
-}
-
-// The actioncreators
-const ActionCreators = {
-  add (amount = 1) {
-    return {
-      type: 'ADD',
-      amount
-    };
-  },
-
-  del () {
-    return {
-      type: 'DEL'
-    };
-  },
-
-  asyncAdd () {
-    return (dispatch) => {
-      setTimeout(() =>
-        dispatch(ActionCreators.add()),
-        9000);
-    };
-  },
-
-  asyncFetch () {
-    return (dispatch, getState) => {
-      console.log(getState());
-      return fetch('http://www.reddit.com/r/apple.json')
-              .then((res) => res.json())
-              .then((json) => dispatch(ActionCreators.add(json.data.children.length)));
-    };
-  },
-
-  asyncFetchAwait () {
-    return async dispatch => {
-      const result = await fetch('http://www.reddit.com/r/apple.json'),
-            json = await result.json();
-
-      dispatch(ActionCreators.add(json.data.children.length));
-    };
-  }
-
 };
 
-// the stores
-// const store = createStore(counter);
-const createStoreWidthMiddleWare = applyMiddleware(thunk)(createStore);
-const store = createStoreWidthMiddleWare(counter);
 
+class App extends Component {
+  constructor () {
+    super();
 
-const actions = bindActionCreators(ActionCreators, store.dispatch);
-
-store.dispatch({type: 'ADD', amount: 1 });
-// store.dispatch({type: 'ADD' });
-store.dispatch(ActionCreators.add());
-store.dispatch(ActionCreators.add());
-
-store.dispatch(ActionCreators.asyncAdd());
-store.dispatch(ActionCreators.asyncFetch());
-store.dispatch(ActionCreators.asyncFetchAwait());
-
-store.subscribe(() => {
-  console.log('edw', store.getState());
-});
-
-console.log(store.getState());
-
-
-// Provides the store to the whole tree (context)
-@provide(store)
-@connect(state => ({counter: state, blah: 2}))
-class MyComponent extends Component {
-  render () {
-    console.log('props heere', this.props);
-    return (
-      <MyChildComponent />
-    );
+    this.state = {
+      selectedCategory: null
+    };
   }
-}
 
-@connect(state => ({counter: state, blue: 14}))
-// @connect(state => ({state}))
-// @connect(state => state);
-// @connect(state => ({state, blue: 4});
-// @connect(state => ({counter: state, blue: 14}))
-class MyChildComponent extends Component {
+  onChange (selectedCategory) {
+    console.log(selectedCategory);
+    this.setState({
+      selectedCategory
+    });
+  }
+
   render () {
     return (
       <div>
-        <h1>hello world {this.props.counter}</h1>
-        <MyNestedComponent />
+        <Header />
+        <Categories
+          selectedCategory={this.state.selectedCategory}
+          onChange={::this.onChange}
+          />
+        <Footer />
       </div>
     );
   }
 }
 
 
-@connect(state => ({state}))
-class MyNestedComponent extends Component {
+class Header extends Component {
   render () {
-    console.log('edeeeeew', this.props);
-    return <h2>hi then!</h2>;
+    return <header><h2>Equip yourself</h2></header>;
   }
 }
 
-React.render(<MyComponent />, document.body);
+class Categories extends Component {
+  render () {
+    const keys = Object.keys(categories);
+    const { selectedCategory } = this.props;
+
+
+    const filteredCategories = selectedCategory
+      ? [selectedCategory]
+      : keys;
+
+    return (
+      <ol>
+        {filteredCategories.map(key =>
+          <Category
+            selectedCategory={this.props.selectedCategory}
+            id={key}
+            onChange={this.props.onChange}
+            {...categories[key]} />
+        )}
+      </ol>
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+class Category extends Component {
+  constructor (props) {
+    super(props);
+
+    this.state = {
+      selected: null,
+      sub: Object.keys(categories[this.props.id].subs)[0]
+    };
+
+  }
+
+  selectSub (sub) {
+    this.setState({
+      sub
+    });
+  }
+
+  selectCategory () {
+    this.props.onChange(this.props.id);
+  }
+
+  deselectCategory () {
+    this.props.onChange(null);
+  }
+
+  isSelected () {
+    return this.props.selectedCategory === this.props.id;
+  }
+
+  submit () {
+    console.log(1);
+  }
+
+  onChange (event, scope) {
+    console.log(event.value);
+  }
+
+  render () {
+    return <li
+      key={this.props.id}
+      className={this.isSelected() ? 'open' : null}>
+        <h3 onClick={::this.selectCategory}>{this.props.title}</h3>
+        { this.isSelected() && <a href="#" onClick={::this.deselectCategory}>close</a> }
+        { this.isSelected() && this.renderSubs() }
+    </li>;
+  }
+
+  renderSubs () {
+    const subs = categories[this.props.selectedCategory].subs;
+    const selectedSub = subs[this.state.sub] || subs[Object.keys(subs)[0]];
+    return (
+      <div>
+        <nav>
+          {Object.keys(subs).map(sub => <a onClick={this.selectSub.bind(this, sub)}>{sub}</a>)}
+        </nav>
+
+        <form>
+
+          <input type="range" min={selectedSub.min} max={selectedSub.max} value={0} ref="min" defaultValue={selectedSub.min} onChange={::this.onChange} /> {this.state.min}
+          <input type="range" min={selectedSub.min} max={selectedSub.max} ref="max" onChange={::this.onChange} /> {this.state.max}
+
+          <button onClick={::this.submit}>submit</button>
+        </form>
+
+      </div>
+    );
+  }
+}
+
+
+class Footer extends Component {
+  render () {
+    return <footer>ads</footer>;
+  }
+}
+
+React.render(
+  <App />
+  , document.body
+);
