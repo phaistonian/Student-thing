@@ -129,8 +129,11 @@ class Category extends Component {
     console.log(1);
   }
 
-  onChange (event, scope) {
-    console.log(event.value);
+  onChange (event) {
+    let scope = event.target.name;
+    this.setState({
+      [scope]: event.target.value
+    });
   }
 
   render () {
@@ -154,8 +157,8 @@ class Category extends Component {
 
         <form>
 
-          <input type="range" min={selectedSub.min} max={selectedSub.max} value={0} ref="min" defaultValue={selectedSub.min} onChange={::this.onChange} /> {this.state.min}
-          <input type="range" min={selectedSub.min} max={selectedSub.max} ref="max" onChange={::this.onChange} /> {this.state.max}
+          <input type="range" min={selectedSub.min} max={selectedSub.max} name="min" value={this.state.min} defaultValue={selectedSub.min} onChange={::this.onChange} /> {this.state.min}
+          <input type="range" min={selectedSub.min} max={selectedSub.max} name="max" value={this.state.max}  onChange={::this.onChange} /> {this.state.max}
 
           <button onClick={::this.submit}>submit</button>
         </form>
